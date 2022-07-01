@@ -1,0 +1,17 @@
+{
+  "name": "everscale-web3-guide",
+  "version": "1.0.0",
+  "description": "Everscale Inpage Provider Guide",
+  "scripts": {
+    "docs:dev": "vitepress dev guide --port 3001",
+    "docs:build": "vitepress build guide",
+    "docs:serve": "vitepress serve guide"
+  },
+  "private": true,
+  "dependencies": {
+    "everscale-inpage-provider": "^0.3.19",
+    "everscale-standalone-client": "^2.0.9",
+    "vitepress": "^1.0.0-alpha.4",
+    "vue": "^3.2.37"
+  }
+}

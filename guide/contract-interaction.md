@@ -196,7 +196,6 @@ _For a full description, please refer to [the ABI specification](https://github.
 
 At a basic level everything in Ever is a _cell_. Each _cell_ consists of up to **1023 data bits** and **up to 4 references** to other cells.
 
-```
 | Name          | Description                                                                                                                                                      | Representation  in cell                                                                                               | Abi version |
 |---------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|-------------|
 | `bool`        | Boolean type                                                                                                                                                     | 1 bit                                                                                                                 | ^1.0        |
@@ -214,7 +213,6 @@ At a basic level everything in Ever is a _cell_. Each _cell_ consists of up to *
 | `map(K,V)`    | Dictionary with key type `K` and value type `V`.<br/><br/>e.g. `map(uint32,address)`<br/><br/>NOTE: `K` can only be a type which can be represented in one cell. | 1 bit flag, if it is set then cell with dictionary                                                                    | ^1.0        |
 | `T[]`         | Array of type `T`.<br/><br/>e.g. `uint256[]`                                                                                                                     | 32 bits of array length, then `map(uint32,T)`                                                                         | ^1.0        |
 | `ref(T)`      | Data of type `T`, but stored in a reference (cell).<br/><br/>e.g. `ref((uint32,address))`                                                                        | Cell reference                                                                                                        | ^2.2        |
-```
 
 In JSON ABI, types are described as follows:
 

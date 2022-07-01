@@ -4,6 +4,7 @@ export default {
   lastUpdated: true,
   prevLinks: true,
   nextLinks: true,
+  base: '/everscale-guide/',
   themeConfig: {
     socialLinks: [
       {icon: 'github', link: 'https://github.com/broxus/everscale-inpage-provider'},

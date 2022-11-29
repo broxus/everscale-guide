@@ -1,7 +1,11 @@
-import './style.css'
+import "./style.css";
 
-import DefaultTheme from 'vitepress/theme'
+import DefaultTheme from "vitepress/theme";
+import RepoList from "./components/RepoList.vue";
 
 export default {
-  ...DefaultTheme
+  ...DefaultTheme,
+  enhanceApp(ctx) {
+    ctx.app.component("RepoList", RepoList);
+  },
 };

@@ -32,8 +32,8 @@ onUnmounted(async () => {
 });
 
 const requestPermissions = async () => {
-  await ever.requestPermissions({ 
-    permissions: ['basic', 'accountInteraction'] 
+  await ever.requestPermissions({
+    permissions: ['basic', 'accountInteraction']
   });
 };
 
@@ -52,7 +52,7 @@ const changeAccount = async () => {
 
 Depending on your use case, you can use different kinds of providers:
 
-* **Extension only:**
+- **Extension only:**
 
   This default usage pattern requires injected provider object. This means extension must be
   installed or website is opened inside some webview with prepared runtime. Library will
@@ -61,12 +61,12 @@ Depending on your use case, you can use different kinds of providers:
   <div class="language-sh"><pre><code><span class="line"><span style="color:var(--vp-c-brand);">&gt;</span> <span style="color:#A6ACCD;">npm install --save everscale-inpage-provider</span></span></code></pre></div>
 
   ```typescript
-  import { ProviderRpcClient } from 'everscale-inpage-provider';
-  
+  import { ProviderRpcClient } from "everscale-inpage-provider";
+
   const ever = new ProviderRpcClient();
   ```
 
-* **With `everscale-standalone-client`:**
+- **With `everscale-standalone-client`:**
 
   In case your app doesn't require user interaction, it can use some kind of fallback provider.
   Depending on `forceUseFallback` parameter it will either always use fallback or only
@@ -78,24 +78,27 @@ Depending on your use case, you can use different kinds of providers:
   <div class="language-sh"><pre><code><span class="line"><span style="color:var(--vp-c-brand);">&gt;</span> <span style="color:#A6ACCD;">npm install --save everscale-inpage-provider everscale-standalone-client</span></span></code></pre></div>
 
   ```typescript
-  import { ProviderRpcClient } from 'everscale-inpage-provider';
-  import { EverscaleStandaloneClient } from 'everscale-standalone-client';
- 
+  import { ProviderRpcClient } from "everscale-inpage-provider";
+  import { EverscaleStandaloneClient } from "everscale-standalone-client";
+
   const ever = new ProviderRpcClient({
     // You can pass `false` to still use extension if it is installed
     forceUseFallback: true,
-    
-    // This method will be executed if either extension 
+
+    // This method will be executed if either extension
     // was not found or `forceUseFallback` is `true`
-    fallback: async () => EverscaleStandaloneClient.create({
-      // You can specify either connection options or preset name.
-      // Available presets:
-      // - `mainnet` - GQL mainnet
-      // - `mainnetJrpc` - JRPC mainnet
-      // - `testnet` - GQL testnet
-      // - `localnet` - Local node GQL
-      connection: 'mainnet',
-    })
+    fallback: async () =>
+      EverscaleStandaloneClient.create({
+        // You can specify either connection options or preset name
+        connection: {
+          id: 2, // network id
+          type: "graphql",
+          data: {
+            // create your own project at https://dashboard.evercloud.dev
+            endpoints: ["https://devnet-sandbox.evercloud.dev/graphql"],
+          },
+        },
+      }),
   });
   ```
 
@@ -125,9 +128,9 @@ Each permission can have some data assigned to it.
 
 At the moment there are only two permissions:
 
-* `basic` - needed for all simple methods like calculating account address or getting transactions.
+- `basic` - needed for all simple methods like calculating account address or getting transactions.
   This permission doesn't have any data assigned to it.
-* `accountInteraction` - any request which requires user interaction (e.g. through popup)
+- `accountInteraction` - any request which requires user interaction (e.g. through popup)
   requires this permission.
   ```typescript
   // Assigned data:
@@ -143,20 +146,20 @@ At the moment there are only two permissions:
 
 ```typescript
 // You can subscribe to permission changes in one place
-(await ever.subscribe('permissionsChanged')).on('data', permissions => {
+(await ever.subscribe("permissionsChanged")).on("data", (permissions) => {
   // You can update component state here
-  console.log(permissions)
+  console.log(permissions);
 });
 
 // NOTE: subscription object can be used during the disposal:
-//   const subscription = await ever.subscribe('permissionsChanged'); 
+//   const subscription = await ever.subscribe('permissionsChanged');
 //   subscription.on('data', data => { ... });
 //   ...
 //   await subscription.unsubscribe();
 
 // Request all permissions
 const permissions = await ever.requestPermissions({
-  permissions: ['basic', 'accountInteraction']
+  permissions: ["basic", "accountInteraction"],
 });
 
 // ...
@@ -187,7 +190,7 @@ will be reset. Therefore, to change the account there is a separate method that 
 ```typescript
 // It will trigger `permissionsChanged` event, where `accountInteraction`
 // will contain the selected account
-await ever.changeAccount()
+await ever.changeAccount();
 ```
 
 <div class="demo">
@@ -198,23 +201,24 @@ await ever.changeAccount()
 
 ## Other Stuff
 
-* In some cases, it is necessary to determine whether the page has a provider as an extension:
+- In some cases, it is necessary to determine whether the page has a provider as an extension:
 
   ```typescript
-  import { hasEverscaleProvider } from 'everscale-inpage-provider';
-  
+  import { hasEverscaleProvider } from "everscale-inpage-provider";
+
   // Will always return `false` in Web Workers or NodeJS environment,
   // otherwise it will wait until the page is loaded and check
-  // whether the RPC object is injected 
-  const hasProvider = await hasEverscaleProvider()
+  // whether the RPC object is injected
+  const hasProvider = await hasEverscaleProvider();
   ```
-* You can explicitly wait until provider is fully initialized:
+
+- You can explicitly wait until provider is fully initialized:
   ```typescript
   // Will either throw an exception if there are some probles,
   // or wait until extension/fallback initialization promise is resolved
   await ever.ensureInitialized();
   ```
-* There are several lifecycle events to provide better error messages or state info:
+- There are several lifecycle events to provide better error messages or state info:
   - `connected` - Called every time when provider connection is established.
   - `disconnected` - Called when inpage provider disconnects from extension.
   - `networkChanged` - Called each time the user changes network.
@@ -223,6 +227,6 @@ await ever.changeAccount()
 
 ## What's next?
 
-At this point, you should have understood roughly the basic structure of a provider. 
-However, we have not yet interacted with the blockchain in any way! 
+At this point, you should have understood roughly the basic structure of a provider.
+However, we have not yet interacted with the blockchain in any way!
 Let's fix it in the next sections, in which we will cover all popular use cases.

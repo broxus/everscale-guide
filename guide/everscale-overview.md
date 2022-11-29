@@ -24,8 +24,8 @@ In addition to the parameters of the cell itself, there are some restrictions on
 - The contract pays for the storage of this data, so it is important to keep track of how you describe your structures, order is important
   for tighter packing. If there is a lot of nested data in the contract, then over time it can use up its entire balance.
 
-    * In the _masterchain_ each bit costs 1000 units and ever reference costs 500000 units.
-    * In the _base workchain_ each bit costs 1 unit and every reference costs 500 units.
+  - In the _masterchain_ each bit costs **1000 units** and every reference costs **500000 units**.
+  - In the _base workchain_ each bit costs **1 unit** and every reference costs **500 units**.
 
   _(the actual values can be viewed in the 18th parameter of the network config)_
 
@@ -36,6 +36,7 @@ In addition to the parameters of the cell itself, there are some restrictions on
 > Values: `(0x539, true, [0x0B, 0x16])`
 >
 > Cell structure to represent this values:
+>
 > ```
 > Ordinary   l: 000   bits: 66   refs: 1   data: 00000539800000016_
 > hashes: 29a11f1e37e0c64354f52be1f517992639e91a7d07487630c1e3800a479277ba
@@ -105,6 +106,7 @@ Masterchain is a special case of workchain. It has notable differences:
 > for the bit before the shifted one.
 >
 > A small visual diagram for this in binary form:
+>
 > ```
 > .1000000....                 | mask:
 > ----------------------------------------------------------
@@ -152,16 +154,16 @@ Each account can be in one of possible states:
 - `active` - account has smart contract code, persistent data and balance.
   At this state it can perform some logic during the transaction and change its persistent data.
   An account enters this state when it was `uninit` and there was an incoming message
-  with `state_init` param (note, that to be able to *deploy* this account, the `state_init`
+  with `state_init` param (note, that to be able to _deploy_ this account, the `state_init`
   hash must be equal to account id).
 - `frozen` - account can't perform any operation, this state contains only previous state
   hash. When storage fee on account is higher than its balance it enters this state. To
-  *unfreeze* it you can send an internal message with attached `state_init` which has
+  _unfreeze_ it you can send an internal message with attached `state_init` which has
   the specified hash. It might be hard to reconstruct this (you must apply all transactions)
   therefore you should never allow such a situation.
 
-[Account initial state](https://github.com/broxus/ton-labs-block/blob/4824b39df2f9665cf78378c9481c4ddcffabe7ae/src/messages.rs#L1707-L1721) (*
-TVC*) contains code and data.
+[Account initial state](https://github.com/broxus/ton-labs-block/blob/4824b39df2f9665cf78378c9481c4ddcffabe7ae/src/messages.rs#L1707-L1721) (_
+TVC_) contains code and data.
 In the solidity ABI, data in TVC is a dictionary with 64-bit keys and arbitrary values.
 All static variables are written to it at the appropriate indexes (see `data` field in JSON ABI).
 Thus, to calculate the address of an account, you must use the TVC from the compiler,
@@ -172,6 +174,7 @@ update its static variables, and compute its hash.
 _Please refer to [the docs](https://docs.ton.dev/86757ecb2/p/45e664-basics-of-free-ton-blockchain/t/20b3af)_
 
 > ### Logical time
+>
 > Before considering messages, it is necessary to know what is the _logical time_. It is a non-negative 64-bit integer,
 > assigned to certain events as follows:
 >
@@ -180,23 +183,25 @@ _Please refer to [the docs](https://docs.ton.dev/86757ecb2/p/45e664-basics-of-fr
 
 In Everscale, messages exist "separately" from transactions as an entity. There are three types of messages:
 
-* _External inbound_ - doesn't contain source address but has the destination address, doesn't have any value. It is used to
+- _External inbound_ - doesn't contain source address but has the destination address, doesn't have any value. It is used to
   call contracts from outside or to deploy them.
-    * There are some limitations on their size, and it is also not guaranteed that they will be delivered in order or that they will
-      be delivered at all.
 
-* _Internal_ - has both source and destination addresses and can have some value. It allows contracts to communicate with each other.
+  - There are some limitations on their size, and it is also not guaranteed that they will be delivered in order or that they will
+    be delivered at all.
+
+- _Internal_ - has both source and destination addresses and can have some value. It allows contracts to communicate with each other.
   There are no reasonable limitations on their size.
-    * It is important to note that each internal message is unique (because it contains its full source address along with its logical
-      creation time, and all outbound messages created by the same smart contract have strictly increasing logical creation times),
-      so, by the hash of the internal message, you can definitely find it (but the same message can be presented in two transactions,
-      as internal outgoing and internal incoming).
-    * Order of internal messages is guaranteed (within a single shard). The order of messages is preserved by their logical time.
-    * Delivery of these messages is also guaranteed.
-    * Internal messages within one shard can reach the destination in almost the same block, however when message is sent to the account
-      which is in the different shard it may take a long time.
 
-* _External outbound_ - has the source address but doesn't contain source address, doesn't have any value. It is used as the
+  - It is important to note that each internal message is unique (because it contains its full source address along with its logical
+    creation time, and all outbound messages created by the same smart contract have strictly increasing logical creation times),
+    so, by the hash of the internal message, you can definitely find it (but the same message can be presented in two transactions,
+    as internal outgoing and internal incoming).
+  - Order of internal messages is guaranteed (within a single shard). The order of messages is preserved by their logical time.
+  - Delivery of these messages is also guaranteed.
+  - Internal messages within one shard can reach the destination in almost the same block, however when message is sent to the account
+    which is in the different shard it may take a long time.
+
+- _External outbound_ - has the source address but doesn't contain source address, doesn't have any value. It is used as the
   events the contracts produce for the outside world. Use them to implement some off-chain logic.
 
 Each message can contain body which is an arbitrary cell. It is used for function input/output or event data.
@@ -213,30 +218,34 @@ An ordinary transaction is performed in several _phases_:
 
 - _Storage phase_ - collects due storage payments for the account state (including smart-contract code and data, if present) up to the
   present time. The smart contract may be _frozen_ as as result.
-    * If the smart contract did not exist before, the storage phase is skipped
+
+  - If the smart contract did not exist before, the storage phase is skipped
 
 - _Credit phase_ - The account is credited with the value of the inbound message received.
-    * Skipped if the transaction was initiated by an external inbound message
-    * Executed very first if the `bounce` flag was set to `false` in the incoming message
+
+  - Skipped if the transaction was initiated by an external inbound message
+  - Executed very first if the `bounce` flag was set to `false` in the incoming message
 
 - _Computing phase_ - The code of the smart contract is invoked inside an instance of TVM with adequate parameters, including a copy of the
   inbound message and of the persistent data, and terminates with an exit code, the new persistent data, and an action list
   (which includes, for instance, outbound messages to be sent). The processing phase may lead to the creation of a new account
   (uninitialized or active), or to the activation of a previously uninitialized or frozen account. The gas payment, equal to the product
   of the gas price and the gas consumed, is exacted from the account balance.
-    * Validators do not include a transaction into the network if it was generated by an external message and the exit code in this phase is
-      different from a successful one
+
+  - Validators do not include a transaction into the network if it was generated by an external message and the exit code in this phase is
+    different from a successful one
 
 - _Action phase_ - If the smart contract has terminated successfully (with exit code 0 or 1), the actions from the list are performed.
   If it is impossible to perform all of them then the transactions is aborted and the account state is rolled back. The transaction is also
   aborted if the smart contract did not terminate successfully, or if it was not possible to invoke the smart contract at all because it
   is uninitialized or frozen.
-    * Note the transaction may be included into the network even if it was generated by an external message (when the previous phase was
-      successful). An included transaction means that fees will be deducted from the account balance even if rolled back.
+
+  - Note the transaction may be included into the network even if it was generated by an external message (when the previous phase was
+    successful). An included transaction means that fees will be deducted from the account balance even if rolled back.
 
 - _Bounce phase_ - If the transaction has been aborted, and the inbound message has its `bounce` flag set, then it is "bounced" by
   automatically generating an outbound message (with the `bounce` flag clear, but `bounced` set) to its original sender.
-    * Almost all value of the origin inbound message is transferred to the generated message.
+  - Almost all value of the origin inbound message is transferred to the generated message.
 
 ### Transaction fees
 
@@ -245,25 +254,27 @@ _Please refer to [the docs](https://docs.ton.dev/86757ecb2/p/632251-fee-calculat
 Transaction fees consist of fees from all executed phases:
 
 ```
-transaction_fee = storage_fee + gas_fees + total_action_fees 
+transaction_fee = storage_fee + gas_fees + total_action_fees
   + inbound_external_message_fee + outbound_internal_messages_fee
 ```
 
-* `storage_fee` - contract storage fee since the previous transaction.
+- `storage_fee` - contract storage fee since the previous transaction.
+
   ```
   storage_fee = ceil (
       (account.bits * bit_price + account.cells * cell_price) * period / 2 ^ 16
   )
   ```
+
   where `bit_price` and `cell_price` and from the network config (p18, e.g. `1` and `500` for mainnet)
 
-* `gas_fees` - fees from the computing phase.
+- `gas_fees` - fees from the computing phase.
 
-* `total_action_fees` - fees from action phase.
+- `total_action_fees` - fees from action phase.
 
-* `inbound_external_message_fee` - external message forwarding fee in case the transaction was produced by external message.
+- `inbound_external_message_fee` - external message forwarding fee in case the transaction was produced by external message.
 
-* `outbound_internal_messages_fee` - forwarding fee for outgoing messages.
+- `outbound_internal_messages_fee` - forwarding fee for outgoing messages.
 
 Based on the above, the cost of executing a transaction can only be calculated by running it locally on the executor.
 Note, that this will be an approximate value as it depends on time and will be a bit greater at the time the transaction is executed.

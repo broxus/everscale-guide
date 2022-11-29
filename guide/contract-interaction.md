@@ -1,53 +1,67 @@
-<script setup>
+<script setup lang="ts">
 import { ProviderRpcClient, Address, TvmException } from 'everscale-inpage-provider';
 import { onMounted, onUnmounted, ref } from 'vue';
 
 const ever = new ProviderRpcClient();
 
-const DePoolAbi = {
-  'ABI version': 2,
-  'header': ['time', 'expire'],
-  'functions': [{
-    'name': 'addOrdinaryStake',
-    'inputs': [
-      {'name': 'stake', 'type': 'uint64'},
-    ],
-    'outputs': [],
-  }, {
-    'name': 'getDePoolInfo',
-    'inputs': [],
-    'outputs': [
-      {'name': 'poolClosed', 'type': 'bool'},
-      {'name': 'minStake', 'type': 'uint64'},
-      {'name': 'validatorAssurance', 'type': 'uint64'},
-      {'name': 'participantRewardFraction', 'type': 'uint8'},
-      {'name': 'validatorRewardFraction', 'type': 'uint8'},
-      {'name': 'balanceThreshold', 'type': 'uint64'},
-      {'name': 'validatorWallet', 'type': 'address'},
-      {'name': 'proxies', 'type': 'address[]'},
-      {'name': 'stakeFee', 'type': 'uint64'},
-      {'name': 'retOrReinvFee', 'type': 'uint64'},
-      {'name': 'proxyFee', 'type': 'uint64'},
-    ],
-  }, {
-    'name': 'getParticipantInfo',
-    'inputs': [
-      { 'name': 'addr', 'type': 'address' },
-    ],
-    'outputs': [
-      { 'name': 'total', 'type': 'uint64' },
-      { 'name': 'withdrawValue', 'type': 'uint64' },
-      { 'name': 'reinvest', 'type': 'bool' },
-      { 'name': 'reward', 'type': 'uint64' },
-      { 'name': 'stakes', 'type': 'map(uint64,uint64)' },
-      { 'name': 'vestings', 'type': 'map(uint64,tuple)', 'components': [{ 'name': 'remainingAmount', 'type': 'uint64' }, { 'name': 'lastWithdrawalTime', 'type': 'uint64', }, { 'name': 'withdrawalPeriod', 'type': 'uint32' }, { 'name': 'withdrawalValue', 'type': 'uint64' }, { 'name': 'owner', 'type': 'address' }] },
-      { 'name': 'locks', 'type': 'map(uint64,tuple)', 'components': [{ 'name': 'remainingAmount', 'type': 'uint64' }, { 'name': 'lastWithdrawalTime', 'type': 'uint64' }, { 'name': 'withdrawalPeriod', 'type': 'uint32' }, { 'name': 'withdrawalValue', 'type': 'uint64' }, { 'name': 'owner', 'type': 'address' }] },
-      { 'name': 'vestingDonor', 'type': 'address' },
-      { 'name': 'lockDonor', 'type': 'address' },
-    ],
-  }],
-  'data': [],
-  'events': [],
+const ExampleAbi = {
+  "ABI version": 2,
+  version: "2.3",
+  header: ["time"],
+  functions: [
+    {
+      name: "constructor",
+      inputs: [
+        { name: "someParam", type: "uint128" },
+        { name: "second", type: "string" },
+      ],
+      outputs: [],
+    },
+    {
+      name: "setVariable",
+      inputs: [{ name: "someParam", type: "uint128" }],
+      outputs: [],
+    },
+    {
+      name: "computeSmth",
+      inputs: [
+        { name: "answerId", type: "uint32" },
+        { name: "offset", type: "uint32" },
+      ],
+      outputs: [
+        {
+          components: [
+            { name: "first", type: "uint32" },
+            { name: "second", type: "string" },
+          ],
+          name: "res",
+          type: "tuple",
+        },
+      ],
+    },
+    {
+      name: "simpleState",
+      inputs: [],
+      outputs: [{ name: "simpleState", type: "uint128" }],
+    },
+  ],
+  data: [{ key: 1, name: "nonce", type: "uint32" }],
+  events: [
+    {
+      name: "StateChanged",
+      inputs: [
+        {
+          components: [
+            { name: "first", type: "uint32" },
+            { name: "second", type: "string" },
+          ],
+          name: "complexState",
+          type: "tuple",
+        },
+      ],
+      outputs: [],
+    },
+  ],
 };
 
 let permissionsSubscription = undefined;
@@ -68,45 +82,32 @@ onUnmounted(async () => {
 });
 
 const requestPermissions = async () => {
-  await ever.requestPermissions({ 
-    permissions: ['basic', 'accountInteraction'] 
+  await ever.requestPermissions({
+    permissions: ['basic', 'accountInteraction']
   });
 };
 
-const dePoolAddress = new Address('0:bbcbf7eb4b6f1203ba2d4ff5375de30a5408a8130bf79f870efbcfd49ec164e9');
-const dePool = new ever.Contract(DePoolAbi, dePoolAddress);
+const exampleAddress = new Address('0:bbcbf7eb4b6f1203ba2d4ff5375de30a5408a8130bf79f870efbcfd49ec164e9');
+const exampleContract = new ever.Contract(ExampleAbi, exampleAddress);
 
-const dePoolInfo = ref();
-const getDePoolInfo = async () => {
+const exampleInfo = ref();
+const getExampleSimpleState = async () => {
   await requestPermissions();
-  dePoolInfo.value = await dePool.methods
-    .getDePoolInfo({})
+  exampleInfo.value = await exampleContract.methods
+    .simpleState()
     .call()
-    .then(data => {
-      if (data != null) {
-        data.validatorWallet = data.validatorWallet.toString();
-        data.proxies.forEach((address, i, proxies) => {
-          proxies[i] = address.toString();
-        });
-      }
-      return JSON.stringify(data, undefined, 4);
-    })
+    .then(data => JSON.stringify(data, undefined, 4))
 };
 
-const getParticipantInfo = async () => {
+const getExampleComplexState = async () => {
   await requestPermissions();
-  dePoolInfo.value = await dePool.methods
-    .getParticipantInfo({
-      addr: new Address('0:dd30aeb6c7ff71d0953d7c3f00d3f7487405ef5f6ee0b2bfa2cb5a73f6fe690a')
+  exampleInfo.value = await exampleContract.methods
+    .computeSmth({
+      answerId: 0,
+      offset: 123,
     })
     .call()
-    .then(data => {
-      if (data != null) {
-        data.vestingDonor = data.vestingDonor.toString();
-        data.lockDonor = data.lockDonor.toString();
-      }
-      return JSON.stringify(data, undefined, 4);
-    })
+    .then(data => JSON.stringify(data, undefined, 4))
 };
 
 const exceptionCode = ref();
@@ -114,8 +115,9 @@ const throwTvmException = async () => {
   await requestPermissions();
   try {
     await dePool.methods
-      .getParticipantInfo({
-        addr: new Address('0:0000000000000000000000000000000000000000000000000000000000000000')
+      .computeSmth({
+        answerId: 0,
+        offset: 10000,
       })
       .call()
   } catch(e) {
@@ -123,33 +125,6 @@ const throwTvmException = async () => {
       exceptionCode.value = e.code;
     }
   }
-};
-
-const TokenRootAbi = {
-  'ABI version': 2,
-  'version': '2.2',
-  'header': ['pubkey', 'time', 'expire'],
-  'functions': [
-    {
-      'name': 'name',
-      'inputs': [{'name': 'answerId', 'type': 'uint32'}],
-      'outputs': [{'name': 'value0', 'type': 'string'}],
-    },
-  ],
-  'events': [],
-  'data': [],
-};
-
-const usdtRootAddress = new Address('0:a519f99bb5d6d51ef958ed24d337ad75a1c770885dcd42d51d6663f9fcdacfb2');
-const usdtRoot = new ever.Contract(TokenRootAbi, usdtRootAddress);
-
-const tokenName = ref();
-const getTokenName = async () => {
-  await requestPermissions();
-  const { value0 } = await usdtRoot.methods
-    .name({ answerId: 0 })
-    .call({ responsible: true });
-  tokenName.value = value0;
 };
 </script>
 
@@ -166,25 +141,77 @@ same VM and executor as the validators, so RPC, during getters execution, is use
 which can be reused. To execute method on-chain you can send an external message or an internal (through the selected wallet).
 The result of the on-chain method execution can be obtained by parsing a transaction with it.
 
+## Example Contract
+
+Let's look at all the ways of interacting with a contract using this contract as an example:
+
+```solidity
+pragma ever-solidity >=0.66;
+
+struct ComplexType {
+  uint32 first;
+  string second;
+}
+
+contract ExampleContract {
+  // Static variable which affects the state init
+  uint32 static nonce;
+
+  // Simple state variable with getter
+  uint128 public simpleState;
+  // Some complex state variable without getters
+  ComplexType complexState;
+
+  // Event declaration
+  event StateChanged(ComplexType complexState);
+
+  // Initializes contract state with some initial data
+  constructor(uint128 someParam, string second) public {
+    tvm.accept();
+    simpleState = someParam;
+    complexState = ComplexType(uint32(someParam % 1000), second);
+  }
+
+  // Updates simple param and returns all remaining gas back
+  function setVariable(uint128 someParam) public cashBack {
+    tvm.rawReserve(1 ever, 0);
+    simpleState = someParam;
+    complexState.first = uint32(someParam % 1000);
+    emit StateChanged(complexState);
+    msg.sender.transfer({value: 0, flag: 68, bounce: false});
+  }
+
+  // Returns an adjusted complex state
+  function computeSmth(
+    uint32 offset
+  ) external view responsible returns (ComplexType res) {
+    require(offset < 1000, 1337);
+    res.first = complexState.first + offset;
+    res.second = complexState.second;
+    return {value: 0, flag: 68, bounce: false} complexState;
+  }
+}
+```
+
 ## Contract ABI
 
-To be able to interact with contract, you must know its structure or the methods it implements. In Everscale, all compilers
+To be able to interact with a contract, you must know its structure or the methods it implements. In Everscale, all compilers
 produce JSON ABI with the description of data, methods and events.
 
 ```typescript
 type Abi = {
   // Legacy major version definition
-  "ABI version": 2,
-  // Full ABI version definition (`major.minor`) 
-  version?: string,
+  "ABI version": 2;
+  // Full ABI version definition (`major.minor`)
+  version?: string;
   // Required headers
-  header: AbiType[],
+  header: AbiType[];
   // Function interfaces
-  functions: AbiFunction[],
+  functions: AbiFunction[];
   // Event interfaces
-  events: AbiEvent[],
+  events: AbiEvent[];
   // State init variables
-  data: (AbiType & { key: number })[]
+  data: (AbiType & { key: number })[];
 };
 ```
 
@@ -196,8 +223,8 @@ _For a full description, please refer to [the ABI specification](https://github.
 
 At a basic level everything in Ever is a _cell_. Each _cell_ consists of up to **1023 data bits** and **up to 4 references** to other cells.
 
-| Name          | Description                                                                                                                                                      | Representation  in cell                                                                                               | Abi version |
-|---------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|-------------|
+| Name          | Description                                                                                                                                                      | Representation in cell                                                                                                | Abi version |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ----------- |
 | `bool`        | Boolean type                                                                                                                                                     | 1 bit                                                                                                                 | ^1.0        |
 | `intN`        | Fixed-sized signed integer, where `N` is a bit length<br /><br />e.g. `int8`, `int32`, `int256`, ..                                                              | `N` bits                                                                                                              | ^1.0        |
 | `uintN`       | Fixed-sized unsigned integer, where `N` is a bit length<br /><br />e.g. `uint8`, `uint32`, ..                                                                    | `N` bits                                                                                                              | ^1.0        |
@@ -208,7 +235,7 @@ At a basic level everything in Ever is a _cell_. Each _cell_ consists of up to *
 | `bytes`       | Byte array                                                                                                                                                       | A cell reference. This cell contains bytes, aligned to 8 bits with continuation in further references with same align | ^1.0        |
 | `fixedbytesN` | Fixed bytes array of length `N` (up to **32**)                                                                                                                   | `N*8` bits                                                                                                            | ^1.0        |
 | `string`      | Byte array which is required to be a valid UTF-8 sequence                                                                                                        | Same as `bytes`                                                                                                       | ^2.1        |
-| `optional(T)` | Can store a valut of `T` type or be empty.<br/><br/>e.g. `optional(string)`                                                                                      | 1 bit flag, if it is set then `T` itself                                                                              | ^2.1        |  
+| `optional(T)` | Can store a valut of `T` type or be empty.<br/><br/>e.g. `optional(string)`                                                                                      | 1 bit flag, if it is set then `T` itself                                                                              | ^2.1        |
 | `tuple`       | A product of types.<br/><br/>e.g. `(uint256,bool,cell)`<br/><br/>NOTE: Requires `components` field in JSON ABI.                                                  | Same as a sequence of inner types                                                                                     | ^1.0        |
 | `map(K,V)`    | Dictionary with key type `K` and value type `V`.<br/><br/>e.g. `map(uint32,address)`<br/><br/>NOTE: `K` can only be a type which can be represented in one cell. | 1 bit flag, if it is set then cell with dictionary                                                                    | ^1.0        |
 | `T[]`         | Array of type `T`.<br/><br/>e.g. `uint256[]`                                                                                                                     | 32 bits of array length, then `map(uint32,T)`                                                                         | ^1.0        |
@@ -219,11 +246,11 @@ In JSON ABI, types are described as follows:
 ```typescript
 type AbiType = {
   // Each parameter must have its own name
-  name: string,
+  name: string;
   // Concrete type from the table above
-  type: string,
+  type: string;
   // Tuple components if it is used in `type`
-  components?: ParamType[],
+  components?: ParamType[];
 };
 ```
 
@@ -240,13 +267,13 @@ In JSON ABI, functions are described as follows:
 ```typescript
 type AbiFunction = {
   // Each function in contract must have its own unique name
-  name: string,
+  name: string;
   // Function arguments
-  inputs: AbiType[],
+  inputs: AbiType[];
   // Function output types (it can return several values of different types)
-  outputs: AbiType[],
+  outputs: AbiType[];
   // Optional explicit function id
-  id?: string,
+  id?: string;
 };
 ```
 
@@ -263,11 +290,11 @@ In JSON ABI, events are described as follows:
 ```typescript
 type AbiEvent = {
   // Each event in contract must have its own unique name
-  name: string,
+  name: string;
   // Event arguments
-  inputs: AbiType[],
+  inputs: AbiType[];
   // Optional explicit event id
-  id?: string,
+  id?: string;
 };
 ```
 
@@ -278,72 +305,57 @@ type AbiEvent = {
 Let's go back to the code and declare the ABI of our contract:
 
 ```typescript
-const DePoolAbi = {
-  'ABI version': 2,
-  'header': ['time', 'expire'],
-  'functions': [{
-    'name': 'addOrdinaryStake',
-    'inputs': [
-      {'name': 'stake', 'type': 'uint64'},
+const ExampleAbi = {
+  "ABI version": 2,
+  version: "2.3",
+  header: ["time"],
+  functions: [{
+    name: "constructor",
+    inputs: [
+      { name: "someParam", type: "uint128" },
+      { name: "second", type: "string" },
     ],
-    'outputs': [],
+    outputs: [],
   }, {
-    'name': 'getDePoolInfo',
-    'inputs': [],
-    'outputs': [
-      {'name': 'poolClosed', 'type': 'bool'},
-      {'name': 'minStake', 'type': 'uint64'},
-      {'name': 'validatorAssurance', 'type': 'uint64'},
-      {'name': 'participantRewardFraction', 'type': 'uint8'},
-      {'name': 'validatorRewardFraction', 'type': 'uint8'},
-      {'name': 'balanceThreshold', 'type': 'uint64'},
-      {'name': 'validatorWallet', 'type': 'address'},
-      {'name': 'proxies', 'type': 'address[]'},
-      {'name': 'stakeFee', 'type': 'uint64'},
-      {'name': 'retOrReinvFee', 'type': 'uint64'},
-      {'name': 'proxyFee', 'type': 'uint64'},
+    name: "setVariable",
+    inputs: [
+      { name: "someParam", type: "uint128" },
     ],
+    outputs: [],
   }, {
-    'name': 'getParticipantInfo',
-    'inputs': [
-      {'name': 'addr', 'type': 'address'},
+    name: "computeSmth",
+    inputs: [
+      { name: "answerId", type: "uint32" },
+      { name: "offset", type: "uint32" },
     ],
-    'outputs': [
-      {'name': 'total', 'type': 'uint64'},
-      {'name': 'withdrawValue', 'type': 'uint64'},
-      {'name': 'reinvest', 'type': 'bool'},
-      {'name': 'reward', 'type': 'uint64'},
-      {'name': 'stakes', 'type': 'map(uint64,uint64)'},
-      {
-        'name': 'vestings',
-        'type': 'map(uint64,tuple)',
-        'components': [
-          {'name': 'remainingAmount', 'type': 'uint64'},
-          {'name': 'lastWithdrawalTime', 'type': 'uint64'},
-          {'name': 'withdrawalPeriod', 'type': 'uint32'},
-          {'name': 'withdrawalValue', 'type': 'uint64'},
-          {'name': 'owner', 'type': 'address'}]
-      },
-      {
-        'name': 'locks', 'type': 'map(uint64,tuple)',
-        'components': [
-          {'name': 'remainingAmount', 'type': 'uint64'},
-          {'name': 'lastWithdrawalTime', 'type': 'uint64'},
-          {'name': 'withdrawalPeriod', 'type': 'uint32'},
-          {'name': 'withdrawalValue', 'type': 'uint64'},
-          {'name': 'owner', 'type': 'address'}
-        ]
-      },
-      {'name': 'vestingDonor', 'type': 'address'},
-      {'name': 'lockDonor', 'type': 'address'},
-    ],
+    outputs: [{
+      components: [
+        { name: "first", type: "uint32" },
+        { name: "second", type: "string" },
+      ],
+      name:"res",
+      type:"tuple",
+    }]
+  }, {
+    name: "simpleState",
+    inputs: [],
+    outputs: [{ name: "simpleState", type: "uint128" }],
   }],
-  'data': [],
-  'events': [],
+  data: [{ key: 1, name: "nonce", type: "uint32" }],
+  events: [{
+    name: "StateChanged",
+    inputs: [{
+      components:[
+        { name: "first", type: "uint32" },
+        { name: "second", type: "string" },
+      ],
+      name: "complexState",
+      type:"tuple",
+    }],
+    outputs: [],
+  }],
 } as const; // NOTE: `as const` is very important here
 ```
-
-> _Full DePool ABI can be found [here](https://github.com/tonlabs/ton-labs-contracts/blob/master/solidity/depool/DePool.abi.json)_
 
 It is important to note that in order to fully use the features of this library, ABI must be declared as a const object and must
 have a const type (therefore should be declared with `as const`). Unfortunately, this approach has drawbacks that have to
@@ -351,133 +363,118 @@ be tolerated for now **(you can't import JSON as a const type, [issue #32063](ht
 
 ## Contract Wrapper
 
-Contract
-wrapper ([`ProviderRpcClient.Contract`](https://broxus.github.io/everscale-inpage-provider/classes/ProviderRpcClient.html#Contract))
-is a preferred way to interact with contracts. It is tied to a specific address, it has a bunch of helpers and a proxy object with all
-methods.
+Contract wrapper ([`ProviderRpcClient.Contract`]) is a preferred way to interact with contracts.
+It is tied to a specific address, it has a bunch of helpers and a proxy object with all methods.
 Construction doesn't make any requests or subscriptions (since this object doesn't have any state),
 however it serializes the provided ABI object, so you shouldn't create it in tight loops.
 
 ```typescript
-import {Address} from 'everscale-inpage-provider';
+import { Address } from "everscale-inpage-provider";
 
-const dePoolAddress = new Address('0:bbcbf7eb4b6f1203ba2d4ff5375de30a5408a8130bf79f870efbcfd49ec164e9');
-const dePool = new ever.Contract(DePoolAbi, dePoolAddress);
+const addr = "0:bbcbf7eb4b6f1203ba2d4ff5375de30a5408a8130bf79f870efbcfd49ec164e9";
+const exampleContract = new ever.Contract(ExampleAbi, new Address(addr));
 ```
 
 ::: info
-An [`Address`](https://broxus.github.io/everscale-inpage-provider/classes/Address.html) objects are used everywhere instead of
-plain strings to prevent some stupid errors. However, requests
-through [`rawApi`](https://broxus.github.io/everscale-inpage-provider/classes/ProviderRpcClient.html#rawApi)
-use strings as it is a Proxy object which directly communicates with underlying provider object via JRPC.
+An [`Address`] objects are used everywhere instead of plain strings to prevent some stupid errors.
+However, requests through [`rawApi`] use strings as it is a Proxy object which directly communicates
+with underlying provider object via JRPC.
 
-Btw, if you have some hardcoded constant address you should better
-use [`AddressLiteral`](https://broxus.github.io/everscale-inpage-provider/classes/AddressLiteral.html)
-which checks the provided string at compile time.
+Btw, if you have some hardcoded constant address you should better use [`AddressLiteral`] which checks
+the provided string at compile time.
 :::
+
+[`ProviderRpcClient.Contract`]: https://broxus.github.io/everscale-inpage-provider/classes/ProviderRpcClient.html#Contract
+[`Address`]: https://broxus.github.io/everscale-inpage-provider/classes/Address.html
+[`AddressLiteral`]: https://broxus.github.io/everscale-inpage-provider/classes/AddressLiteral.html
+[`rawApi`]: https://broxus.github.io/everscale-inpage-provider/classes/ProviderRpcClient.html#rawApi
 
 ## Reading contract
 
 In most contracts all publicly visible data should be accessed by getters. They don't require user interaction,
 and only rely on `basic` permission, so they can be used even without extension via standalone client.
 
-Contract wrapper has a [`methods`](https://broxus.github.io/everscale-inpage-provider/classes/Contract.html#methods) Proxy
-object which contains all functions as properties. To execute a getter, you should first prepare its arguments and
-then execute the [`call`](https://broxus.github.io/everscale-inpage-provider/interfaces/ContractMethod.html#call)
-method on the prepared object.
+Contract wrapper has a [`methods`] Proxy object which contains all functions as properties.
+To execute a getter, you should first prepare its arguments and then execute the [`call`] method on the prepared object.
+
+[`methods`]: https://broxus.github.io/everscale-inpage-provider/classes/Contract.html#methods
+[`call`]: https://broxus.github.io/everscale-inpage-provider/interfaces/ContractMethod.html#call
 
 ### Simple getters
 
-This type of getters is executed locally by simulating external message call and parsing external outgoing messages.
+This type of getters is executed locally by simulating an external message call and parsing external outgoing messages.
 
 ```typescript
 // Optionally request account state
-const state = await ever.getFullContractState(dePool.address);
+const state = await ever.getFullContractState(exampleContract.address);
 
 // Simple getter without any parameters
-const dePoolInfo = await dePool.methods.getDePoolInfo({}).call({
+const simpleState = await exampleContract.methods.simpleState().call({
   // You can call several getters "atomicly" on a single contract state
   cachedState: state,
-})
+});
 
-// Another getter, but with parameters
-const participantInfo = await dePool.methods
-  .getParticipantInfo({
+// Another getter, but with parameters.
+// NOTE: It will request a new state because the `cachedState` was omitted.
+const complexState = await exampleContract.methods.computeSmth({
     // Arguments have the same type as described in ABI,
     // but merged into one object by `name`
-    addr: new Address('0:dd30aeb6c7ff71d0953d7c3f00d3f7487405ef5f6ee0b2bfa2cb5a73f6fe690a'),
+    answerId: 0,
+    offset: 123,
   })
-  .call({
-    // NOTE: It will request the state itself if it is not specified
-    cachedState: state,
-  }); 
+  .call();
 ```
 
 <div class="demo">
-  <button @click="getDePoolInfo">getDePoolInfo</button>
-  <button @click="getParticipantInfo">getParticipantInfo</button>
-  <pre v-if="dePoolInfo != null">{{ dePoolInfo }}</pre>
+  <button @click="getExampleSimpleState"><code>simpleState()</code></button>
+  <button @click="getExampleComplexState"><code>computeSmth(0, 123)</code></button>
+  <pre v-if="exampleInfo != null">{{ exampleInfo }}</pre>
 </div>
 
 ### Responsible methods
 
-This type of methods can either be called via internal message or locally as a getter via external message. It differs from
-simple getters as it has additional argument of type `uint32` which is usually called `answerId`.
+You may have noticed that the method with signature `computeSmth(uint32 offset): ComplexType` produced
+additional `uint32 answerId` argument. That is because it has the `responsible` modifier.
 
-* When it is called on-chain, it returns the result in outgoing internal message to the caller with `answerId` as a function id.
-* When it is called locally, it behaves the same way as simple getters. However, in this library you could call these methods
-  with an additional `responsible: true` flag which executes them locally as internal messages. It allows skipping headers,
-  so you could use the same function signature for contracts with different headers set.
+Methods with this modifier can be called either via an internal message, or locally as a getter via an external message.
+It differs from simple getters by having an additional first argument of type `uint32` which is usually called `answerId`.
+
+- When it is called on-chain, it returns the result in an outgoing internal message to the caller with `answerId` as the function id.
+- When called locally, it behaves just like simple getters. However, in this library, you could call these methods
+  with the additional `responsible: true` flag, which executes them locally as internal messages. This allows headers to be skipped,
+  so you can use the same function signature for contracts with different sets of headers.
 
 ```typescript
-const TokenRootAbi = {
-  'ABI version': 2,
-  'version': '2.2',
-  'header': ['pubkey', 'time', 'expire'],
-  'functions': [
-    {
-      'name': 'name',
-      'inputs': [{'name': 'answerId', 'type': 'uint32'}],
-      'outputs': [{'name': 'value0', 'type': 'string'}],
-    },
-  ],
-  'events': [],
-  'data': [],
-} as const;
-
-const usdtRootAddress = new Address('0:a519f99bb5d6d51ef958ed24d337ad75a1c770885dcd42d51d6663f9fcdacfb2');
-const usdtRoot = new ever.Contract(TokenRootAbi, usdtRootAddress);
-
-const {value0: tokenName} = await usdtRoot.methods
-  .name({})
-  .call({responsible: true})
-console.log(`Token name: ${tokenName}`)
+// Executes this getter locally as an internal message
+const complexState = await exampleContract.methods.computeSmth({
+    answerId: 0,
+    offset: 123,
+  })
+  .call({
+    // Allows using this getter for contracts with the same function signature,
+    // but different sets of headers.
+    responsible: true
+  });
 ```
-
-<div class="demo">
-  <button @click="getTokenName">Get token name</button>
-  <pre v-if="tokenName != null">Token name: {{ tokenName }}</pre>
-</div>
 
 ### TVM Exceptions
 
 There can be exceptions during local contract execution. They may arise either due to an incorrect function signature
-or due to some checks in contract code. If an exception code is less than 100, then it is likely due to an incorrect ABI
+or due to some checks in a contract code. If an exception code is less than 100, then it is likely due to an incorrect ABI
 or signature or something else. Otherwise, it is an exception from the contract code, and you can find the reason if you
 have that code.
 
-You can catch TVM exceptions using [`TvmException`](https://broxus.github.io/everscale-inpage-provider/classes/TvmException.html) class.
-Although there might be some situations when execution fails due to a TVM exception, but other exception is thrown - in that
-case it is more likely due to incorrect input or contract state.
+You can catch TVM exceptions using [`TvmException`] class.
+Although there might be some situations when execution fails due to a TVM exception, however, the exception of another type
+is thrown - in that case it is more likely due to incorrect input or contract state.
 
 ```typescript
-import {TvmException} from 'everscale-inpage-provider'
+import { TvmException } from "everscale-inpage-provider";
 
 try {
-  const participantInfo = await dePool.methods
-    .getParticipantInfo({
-      // This dePool definitely doesn't have such participant
-      addr: new Address('0:0000000000000000000000000000000000000000000000000000000000000000'),
+  const participantInfo = await exampleContract.methods.computeSmth({
+      answerId: 0,
+      offset: 10000, // there is `require(offset < 1000, 1337)` in Solidity
     })
     .call();
 } catch (e) {
@@ -491,10 +488,14 @@ try {
 ```
 
 <div class="demo">
-  <button @click="throwTvmException">getParticipantInfo</button>
-  <a v-if="exceptionCode != null" target="_blank" href="https://github.com/tonlabs/ton-labs-contracts/blob/e7821cec3514869979f702047348b2faf35b7b3f/solidity/depool/DePool.sol#L1428"><pre>require(optParticipant.hasValue(), Errors.NO_SUCH_PARTICIPANT);</pre></a>
-  <pre v-if="exceptionCode != null">TVM Exception: {{ exceptionCode }}</pre>
+  <button @click="throwTvmException"><code>computeSmth(0, 10000)</code></button>
+  <template >
+    <pre>require(offset &lt; 1000, 1337);</pre>
+    <pre>TVM Exception: {{ exceptionCode }}</pre>
+  </template>
 </div>
+
+[`TvmException`]: https://broxus.github.io/everscale-inpage-provider/classes/TvmException.html
 
 ::: details Known TVM Exceptions
 
@@ -503,7 +504,7 @@ try {
 _Please refer to [the whitepaper](https://test.ton.org/tvm.pdf) 4.5.7_
 
 | Code | Name              | Definition                                                                                                                       |
-|------|-------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| ---- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | 2    | Stack underflow   | Not enough arguments in the stack for a primitive                                                                                |
 | 3    | Stack overflow    | More values have been stored on a stack than allowed by this version of TVM                                                      |
 | 4    | Integer overflow  | Integer does not fit into expected range (by default −2<sup>256</sup> ≤ x < 2<sup>256</sup>), or a division by zero has occurred |
@@ -522,7 +523,7 @@ _Please refer to [the whitepaper](https://test.ton.org/tvm.pdf) 4.5.7_
 _Please refer to [the docs](https://github.com/tonlabs/TON-Solidity-Compiler/blob/master/API.md#solidity-runtime-errors)_
 
 | Code | Definition                                                                                                                                                                                                                                                  |
-|------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 40   | External inbound message has an invalid signature. See [`tvm.pubkey()`](https://github.com/tonlabs/TON-Solidity-Compiler/blob/master/API.md#tvmpubkey) and [`msg.pubkey()`](https://github.com/tonlabs/TON-Solidity-Compiler/blob/master/API.md#msgpubkey). |
 | 50   | Array index or index of [`<mapping>.at()`](https://github.com/tonlabs/TON-Solidity-Compiler/blob/master/API.md#mappingat) is out of range.                                                                                                                  |
 | 51   | Contract's constructor has already been called.                                                                                                                                                                                                             |

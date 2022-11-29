@@ -1,3 +1,16 @@
+<script setup lang="ts">
+const repos = [
+  {
+    name: 'everscale-inpage-provider',
+    url: 'https://github.com/broxus/everscale-inpage-provider',
+  },
+  {
+    name: 'everscale-standalone-client',
+    url: 'https://github.com/broxus/everscale-standalone-client',
+  }
+];
+</script>
+
 # Introduction
 
 This library seeks to be a powerful tool for building web3 applications that work with [Everscale blockchain](https://everscale.network/).
@@ -9,3 +22,5 @@ providers are installed (or you are in the NodeJS environment), you can
 use [`everscale-standalone-client`](https://github.com/broxus/everscale-standalone-client).
 It only supports methods that do not require user interaction (and its implementation is loaded only when it is used, so the size of the
 resulting bundle is not very large).
+
+<RepoList :repos="repos" />
